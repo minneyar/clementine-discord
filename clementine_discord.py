@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2019 minneyar
+# Copyright 2019-2020 minneyar
 #
 # Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 # following conditions are met:
@@ -94,13 +94,23 @@ class PresenceUpdater:
                 tmp_metadata = dict()
                 for key, value in metadata.items():
                     tmp_metadata[key.replace(':', '-')] = value
-                details = DETAILS_STRING.format(**tmp_metadata)
+                try:
+                    details = DETAILS_STRING.format(**tmp_metadata)
+                except KeyError:
+                    self.logger.warning("Error getting song details:", exc_info=True)
+                    self.logger.warning("You should customize the DETAILS_STRING in the script to use "
+                                        "appropriate metadata for your media.")
+                    details = "(Error)"
 
             if playback_status == 'Playing':
-                length_s = metadata['mpris:length'] / 1000000
-                time_now = time.time()
-                time_start = time_now - position_s
-                time_end = time_start + length_s
+                try:
+                    length_s = metadata['mpris:length'] / 1000000
+                    time_now = time.time()
+                    time_start = time_now - position_s
+                    time_end = time_start + length_s
+                except KeyError:
+                    # Some media types may not provide length information; just ignore it
+                    pass
             self.logger.debug("Updating Discord.")
             self.client.update(state=playback_status,
                                details=details,
