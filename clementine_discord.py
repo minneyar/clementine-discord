@@ -21,9 +21,10 @@
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 # USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# fork by kitten99
+
 import struct
 import sys
-
 import dbus
 import logging
 import time
@@ -34,9 +35,9 @@ import pypresence
 # To see a list of keys, play a song and run:
 # qdbus org.mpris.MediaPlayer2.clementine /org/mpris/MediaPlayer2 org.freedesktop.DBus.Properties.Get \
 #     org.mpris.MediaPlayer2.Player Metadata
-DETAILS_STRING = '🎵 {xesam-title} ({xesam-album})'
-CLIENT_ID = 647617680072900608
 
+DETAILS_STRING = '{artist} - {title} ({album})'
+CLIENT_ID = 647617680072900608
 
 class PresenceUpdater:
     def __init__(self):
@@ -54,10 +55,8 @@ class PresenceUpdater:
             try:
                 if not self.prop_iface:
                     self.logger.info("Connecting to Clementine.")
-                    self.player = self.bus.get_object('org.mpris.MediaPlayer2.clementine',
-                                                      '/org/mpris/MediaPlayer2')
-                    self.prop_iface = dbus.Interface(self.player,
-                                                     dbus_interface='org.freedesktop.DBus.Properties')
+                    self.player = self.bus.get_object('org.mpris.MediaPlayer2.clementine', '/org/mpris/MediaPlayer2')
+                    self.prop_iface = dbus.Interface(self.player, dbus_interface='org.freedesktop.DBus.Properties')
 
                 self.logger.info("Connecting to Discord.")
                 self.client.connect()
@@ -91,15 +90,16 @@ class PresenceUpdater:
             if playback_status == 'Stopped':
                 details = None
             else:
-                tmp_metadata = dict()
-                for key, value in metadata.items():
-                    tmp_metadata[key.replace(':', '-')] = value
+                self.logger.debug("Clementine Metadata: %s" % metadata)
                 try:
-                    details = DETAILS_STRING.format(**tmp_metadata)
+                    #convert dbus string
+                    artist = ' - '.join([str(a) for a in metadata['xesam:artist']])[:25]  
+                    title = str(metadata['xesam:title'])[:25]    
+                    album = str(metadata['xesam:album'])[:25]    
+                    details = DETAILS_STRING.format(artist=artist, title=title, album=album)
                 except KeyError:
                     self.logger.warning("Error getting song details:", exc_info=True)
-                    self.logger.warning("You should customize the DETAILS_STRING in the script to use "
-                                        "appropriate metadata for your media.")
+                    self.logger.warning("You should customize the DETAILS_STRING in the script to use appropriate metadata for your media.")
                     details = "(Error)"
 
             if playback_status == 'Playing':
@@ -112,16 +112,12 @@ class PresenceUpdater:
                     # Some media types may not provide length information; just ignore it
                     pass
             self.logger.debug("Updating Discord.")
-            self.client.update(state=playback_status,
-                               details=details,
-                               start=time_start,
-                               end=time_end)
+            self.client.update(state=playback_status, details=details, start=time_start, end=time_end)
             time.sleep(15)
 
     def close(self):
         self.logger.info("Shutting down.")
         self.client.close()
-
 
 if __name__ == '__main__':
     updater = PresenceUpdater()
