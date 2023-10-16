@@ -4,10 +4,10 @@
 # Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 # following conditions are met:
 #
-# 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+# 1. Redistributions of source code must retain the above copyright notice, this list of conditions, and the following
 # disclaimer.
 #
-# 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+# 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions, and the
 # following disclaimer in the documentation and/or other materials provided with the distribution.
 #
 # 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
@@ -36,7 +36,8 @@ import pypresence
 # qdbus org.mpris.MediaPlayer2.clementine /org/mpris/MediaPlayer2 org.freedesktop.DBus.Properties.Get \
 #     org.mpris.MediaPlayer2.Player Metadata
 
-DETAILS_STRING = '{artist} - {title} ({album})'
+DETAILS_STRING = '{artist} - {title}'
+ALBUM_STRING = '{album}'
 CLIENT_ID = 647617680072900608
 
 class PresenceUpdater:
@@ -89,18 +90,17 @@ class PresenceUpdater:
 
             if playback_status == 'Stopped':
                 details = None
+                state = 'Stopped'
+            elif playback_status == 'Paused':
+                details = 'Paused'
+                state = None
             else:
                 self.logger.debug("Clementine Metadata: %s" % metadata)
-                try:
-                    #convert dbus string
-                    artist = ' - '.join([str(a) for a in metadata['xesam:artist']])[:25]  
-                    title = str(metadata['xesam:title'])[:25]    
-                    album = str(metadata['xesam:album'])[:25]    
-                    details = DETAILS_STRING.format(artist=artist, title=title, album=album)
-                except KeyError:
-                    self.logger.warning("Error getting song details:", exc_info=True)
-                    self.logger.warning("You should customize the DETAILS_STRING in the script to use appropriate metadata for your media.")
-                    details = "(Error)"
+                artist = ', '.join([str(a) for a in metadata['xesam:artist']])
+                title = str(metadata['xesam:title'])
+                album = metadata['xesam:album']
+                details = DETAILS_STRING.format(artist=artist, title=title)
+                state = ALBUM_STRING.format(album=album)
 
             if playback_status == 'Playing':
                 try:
@@ -112,12 +112,13 @@ class PresenceUpdater:
                     # Some media types may not provide length information; just ignore it
                     pass
             self.logger.debug("Updating Discord.")
-            self.client.update(state=playback_status, details=details, start=time_start, end=time_end)
+            self.client.update(state=state, details=details, start=time_start, end=time_end)
             time.sleep(15)
 
     def close(self):
         self.logger.info("Shutting down.")
-        self.client.close()
+        if hasattr(self, 'client'):
+            self.client.close()
 
 if __name__ == '__main__':
     updater = PresenceUpdater()
