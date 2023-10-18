@@ -32,6 +32,8 @@ class PresenceUpdater:
         self.prop_iface = None
         self.large_image_key = "logo"
         self.large_image_text = "Clementine"
+        self.small_image_key = "play"
+        self.small_image_text = "Playing"
 
     def run(self):
         while True:
@@ -73,9 +75,13 @@ class PresenceUpdater:
             if playback_status == 'Stopped':
                 details = None
                 state = 'Stopped'
+                small_image_key = "stopbut"
+                small_image_text = "Stopped"
             elif playback_status == 'Paused':
                 details = 'Paused'
                 state = None
+                small_image_key = "pausebut"
+                small_image_text = "Paused"
             else:
                 self.logger.debug("Clementine Metadata: %s" % metadata)
                 artist = ', '.join([str(a) for a in metadata['xesam:artist']])
@@ -83,6 +89,8 @@ class PresenceUpdater:
                 album = metadata['xesam:album']
                 details = DETAILS_STRING.format(artist=artist, title=title)
                 state = ALBUM_STRING.format(album=album)
+                small_image_key = "playbut"
+                small_image_text = "Playing"
 
             if playback_status == 'Playing':
                 try:
@@ -100,7 +108,9 @@ class PresenceUpdater:
                 start=time_start,
                 end=time_end,
                 large_image=self.large_image_key,
-                large_text=self.large_image_text
+                large_text=self.large_image_text,
+                small_image=small_image_key,
+                small_text=small_image_text
             )
             time.sleep(15)
 
