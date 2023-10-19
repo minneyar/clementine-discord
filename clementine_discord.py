@@ -78,8 +78,11 @@ class PresenceUpdater:
                 small_image_key = "stopbut"
                 small_image_text = "Stopped"
             elif playback_status == 'Paused':
-                details = 'Paused'
-                state = None
+                artist = ', '.join([str(a) for a in metadata['xesam:artist']])
+                title = str(metadata['xesam:title'])
+                album = metadata['xesam:album']
+                details = DETAILS_STRING.format(artist=artist, title=title)
+                state = ALBUM_STRING.format(album=album)
                 small_image_key = "pausebut"
                 small_image_text = "Paused"
             else:
@@ -101,6 +104,7 @@ class PresenceUpdater:
                 except KeyError:
                     # Some media types may not provide length information; just ignore it
                     pass
+
             self.logger.debug("Updating Discord.")
             self.client.update(
                 state=state,
@@ -113,6 +117,8 @@ class PresenceUpdater:
                 small_text=small_image_text
             )
             time.sleep(15)
+
+
 
     def close(self):
         self.logger.info("Shutting down.")
