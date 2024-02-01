@@ -72,24 +72,22 @@ class PresenceUpdater:
             time_start = None
             time_end = None
 
+            artist = ', '.join([str(a) for a in metadata.get('xesam:artist', [])])
+            title = str(metadata.get('xesam:title', ''))
+            album = metadata.get('xesam:album', '')
+
             if playback_status == 'Stopped':
                 details = None
                 state = 'Stopped'
                 small_image_key = "stopbut"
                 small_image_text = "Stopped"
             elif playback_status == 'Paused':
-                artist = ', '.join([str(a) for a in metadata['xesam:artist']])
-                title = str(metadata['xesam:title'])
-                album = metadata['xesam:album']
                 details = DETAILS_STRING.format(artist=artist, title=title)
                 state = ALBUM_STRING.format(album=album)
                 small_image_key = "pausebut"
                 small_image_text = "Paused"
             else:
                 self.logger.debug("Clementine Metadata: %s" % metadata)
-                artist = ', '.join([str(a) for a in metadata['xesam:artist']])
-                title = str(metadata['xesam:title'])
-                album = metadata['xesam:album']
                 details = DETAILS_STRING.format(artist=artist, title=title)
                 state = ALBUM_STRING.format(album=album)
                 small_image_key = "playbut"
