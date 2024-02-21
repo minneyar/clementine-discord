@@ -72,28 +72,39 @@ class PresenceUpdater:
             time_start = None
             time_end = None
 
+            artist = ', '.join([str(a) for a in metadata.get('xesam:artist', [])])
+            title = str(metadata.get('xesam:title', ''))
+            album = metadata.get('xesam:album', '')
+
             if playback_status == 'Stopped':
                 details = None
                 state = 'Stopped'
                 small_image_key = "stopbut"
                 small_image_text = "Stopped"
             elif playback_status == 'Paused':
-                artist = ', '.join([str(a) for a in metadata['xesam:artist']])
-                title = str(metadata['xesam:title'])
-                album = metadata['xesam:album']
                 details = DETAILS_STRING.format(artist=artist, title=title)
                 state = ALBUM_STRING.format(album=album)
                 small_image_key = "pausebut"
                 small_image_text = "Paused"
             else:
                 self.logger.debug("Clementine Metadata: %s" % metadata)
-                artist = ', '.join([str(a) for a in metadata['xesam:artist']])
-                title = str(metadata['xesam:title'])
-                album = metadata['xesam:album']
                 details = DETAILS_STRING.format(artist=artist, title=title)
                 state = ALBUM_STRING.format(album=album)
                 small_image_key = "playbut"
                 small_image_text = "Playing"
+
+            # Do some trimming if needed or discord won't accept >128 chars
+            if details and len(details) > 128:
+                remaining_chars = 128 - len("...")  # Leave room for "..."
+                artist_title_string = f'{artist} - {title}'
+                if len(artist_title_string) > remaining_chars:
+                    # If both artist and title together are too long, trim both
+                    artist = artist[:remaining_chars // 2 - 4] + "..."
+                    title = title[:remaining_chars // 2 - 4] + "..."
+                else:
+                    # Otherwise, just trim the title
+                    title = title[:remaining_chars - len(artist) - 4] + "..."
+                details = DETAILS_STRING.format(artist=artist, title=title)
 
             if playback_status == 'Playing':
                 try:
